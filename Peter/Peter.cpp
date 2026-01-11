@@ -7,6 +7,8 @@
 #include <cstdlib>
 #include <ctime>
 #include <mmsystem.h>
+#include <chrono>
+#include <thread>
 
 #pragma comment(lib, "gdiplus.lib")
 #pragma comment(lib, "winmm.lib")
@@ -15,14 +17,12 @@ using namespace std;
 using namespace Gdiplus;
 
 typedef struct {
-    float x, y, speed, w, h, rad, dx, dy;
+    float x, y, speed, w, h, rad, dx, dy, jspeed;
     HBITMAP hbmp;
 } sprite;
 
 sprite man;
 sprite enemy;
-sprite gun;
-sprite bullet;
 sprite plat;
 
 struct {
@@ -53,6 +53,7 @@ void Ingame() {
     man.w = 150;  
     man.h = 125;
     man.speed = 10;
+    man.jspeed = 20;
     man.x = window.w / 10;
     man.y = window.h / 2;
 
@@ -175,27 +176,39 @@ void LimitPlat() {
         man.y >= plat.y  - man.h  &&
         man.y <= plat.y + plat.h  ) 
     {
-        int x1 = man.x - plat.x + plat.w;
-        int x2 = plat.x - man.x + man.w;
-        int y1 = man.y - plat.y + plat.h;
-        int y2 = plat.y - man.y + man.h;
+        float x1 = man.x + man.w - plat.x;
+        float x2 = plat.x + plat.w - man.x;
+        float y1 = man.y + man.h - plat.y;
+        float y2 = plat.y + plat.h - man.y;
         
-        int over1 = min(x1, x2);
-        int over2 = min(y1, y2);
-        int itog = min(over1, over2);
+        float over1 = min(x1, x2);
+        float over2 = min(y1, y2);
+        float itog = min(over1, over2);
 
         if (itog == x1) {
-            man.x = plat.x + plat.w;
+            man.x = plat.x - man.w;
         }
         else if (itog == x2) {
-            man.x = plat.x - man.w;
+            man.x = plat.x + plat.w;
         }
         else if (itog == y1) {
             man.y = plat.y - man.h;
         }
         else if (itog == y2) {
-            man.y = plat.y + man.h;
+            man.y = plat.y + plat.h;
         }
+    }
+}
+
+void Gravity() {
+
+    bool gravity = !GetAsyncKeyState(VK_SPACE);
+    if (gravity = true) {
+        man.y += man.jspeed;
+    }
+    if (GetAsyncKeyState(VK_SPACE)) {
+        gravity = false;
+        man.y -= man.jspeed * 2;
     }
 }
 
@@ -204,7 +217,6 @@ void Fight() {
     float dy = man.y - enemy.y;
     float distance = sqrt(dx * dx + dy * dy);
 
-    // Check collision using circle collision detection
     float collisionRadius = (man.w + enemy.w) / 6;
 
     if (distance < collisionRadius) {
@@ -286,7 +298,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hinstance,
     _In_ LPWSTR lpcmdline,
     _In_ int ncmdshow) {
 
-    // Initialize GDI+
     ULONG_PTR gdiplusToken;
     GdiplusStartupInput gdiplusStartupInput;
     GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
@@ -294,8 +305,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hinstance,
     InitializeWindow();
     Ingame();
 
-    // Play background music (commented out as file might not exist)
-    // mciSendString(TEXT("play music.mp3 repeat"), NULL, 0, NULL);
 
     ShowCursor(false);
 
@@ -316,6 +325,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hinstance,
                 // Update game state
                 Limit();
                 LimitPlat();
+                Gravity();
                 Fight();
 
                 // Increase score over time
