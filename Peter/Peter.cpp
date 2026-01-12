@@ -202,13 +202,18 @@ void LimitPlat() {
 
 void Gravity() {
 
-    bool gravity = !GetAsyncKeyState(VK_SPACE);
-    if (gravity = true) {
-        man.y += man.jspeed;
+    
+    float gravity = 20;
+    float a = 0.1;
+    float range = man.y + man.h;
+    float prod = -200;
+    while (range < window.h) {
+        gravity += a;
+        man.y += gravity;
     }
-    if (GetAsyncKeyState(VK_SPACE)) {
-        gravity = false;
-        man.y -= man.jspeed * 2;
+    while (GetAsyncKeyState(VK_SPACE) || gravity > 0) {
+        gravity -= a;
+        man.y -= gravity;
     }
 }
 
