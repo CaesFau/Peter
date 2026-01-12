@@ -1,4 +1,4 @@
-﻿// Peter.cpp : Defines the entry point for the application.
+// Peter.cpp : Defines the entry point for the application.
 //
 
 #include <windows.h>
@@ -39,13 +39,11 @@ struct {
 HBITMAP hBack;
 
 void Ingame() {
-    // Load bitmaps with error checking
-    man.hbmp = (HBITMAP)LoadImageA(NULL, "чикен.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-    enemy.hbmp = (HBITMAP)LoadImageA(NULL, "зомби.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-    plat.hbmp = (HBITMAP)LoadImageA(NULL, "облако.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    man.hbmp = (HBITMAP)LoadImageA(NULL, "chiken.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    enemy.hbmp = (HBITMAP)LoadImageA(NULL, "zombi.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    plat.hbmp = (HBITMAP)LoadImageA(NULL, "cloud.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
     hBack = (HBITMAP)LoadImageA(NULL, "Home.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
-    // Check if bitmaps loaded successfully
     if (!man.hbmp || !enemy.hbmp || !hBack) {
         MessageBoxA(NULL, "Failed to load game resources!", "Error", MB_ICONERROR);
     }
@@ -53,7 +51,6 @@ void Ingame() {
     man.w = 150;  
     man.h = 125;
     man.speed = 10;
-    man.jspeed = 20;
     man.x = window.w / 10;
     man.y = window.h / 2;
 
@@ -71,12 +68,10 @@ void Ingame() {
     game.score = 0;
     game.active = true;
 
-    // Initialize random seed
     srand(static_cast<unsigned int>(time(NULL)));
 }
 
 void Sound(const char* name) {
-    // PlaySoundA(name, NULL, SND_FILENAME | SND_ASYNC);
 }
 
 void ShowScore() {
@@ -92,7 +87,6 @@ void ShowScore() {
     TextOutA(window.context, 10, 10, "Score:", 6);
     TextOutA(window.context, 120, 10, txt, strlen(txt));
 
-    // Clean up font resources
     SelectObject(window.context, hOldFont);
     DeleteObject(hFont);
 }
@@ -104,7 +98,7 @@ void ProcessInput() {
     if (GetAsyncKeyState('D')) man.x += man.speed;
 
     if (!game.active && (GetAsyncKeyState(VK_SPACE) & 0x8000)) {
-        Ingame(); // Restart game
+        Ingame();
     }
 }
 
@@ -127,21 +121,18 @@ void ShowBMP(HDC hdc, int x, int y, int x1, int y1, HBITMAP hbmp, bool alpha = f
 }
 
 void ShowManAndEnemy() {
-    // Clear background
+
     RECT rect = { 0, 0, window.w, window.h };
     HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
     FillRect(window.context, &rect, hBrush);
     DeleteObject(hBrush);
 
-    // Show background
     ShowBMP(window.context, 0, 0, window.w, window.h, hBack);
 
     ShowBMP(window.context, plat.x ,plat.y , plat.w, plat.h, plat.hbmp, true);
 
-    // Show player
     ShowBMP(window.context, man.x , man.y , man.w, man.h, man.hbmp, true);
 
-    // Enemy AI - chase player
     float dx = man.x - enemy.x;
     float dy = man.y - enemy.y;
     float distance = sqrt(dx * dx + dy * dy);
@@ -151,7 +142,6 @@ void ShowManAndEnemy() {
         enemy.y += (dy / distance) * enemy.speed;
     }
 
-    // Show enemy
     ShowBMP(window.context, enemy.x , enemy.y , enemy.w, enemy.h, enemy.hbmp, true);
 }
 
@@ -202,7 +192,16 @@ void LimitPlat() {
 
 void Gravity() {
 
-   
+    float g = 0;
+    float a = 1;
+    if (man.y + man.h == window.h) {
+        g += a;
+        man.y = g;
+        if (g <= 100) {
+            g -= a;
+            man.y = g;
+        }
+    }
 
 }
 
@@ -237,7 +236,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 void InitializeWindow() {
     SetProcessDPIAware();
 
-    // Register window class
     WNDCLASSA wc = { 0 };
     wc.lpfnWndProc = WindowProc;
     wc.hInstance = GetModuleHandle(NULL);
@@ -245,15 +243,12 @@ void InitializeWindow() {
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     RegisterClassA(&wc);
 
-    // Get screen dimensions
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
-    // Create window
     window.hwnd = CreateWindowA("GameWindow", "Peter Game", WS_POPUP | WS_VISIBLE,
         0, 0, screenWidth, screenHeight, NULL, NULL, GetModuleHandle(NULL), NULL);
 
-    // Get client area dimensions
     RECT r;
     GetClientRect(window.hwnd, &r);
     window.w = r.right - r.left;
@@ -262,13 +257,12 @@ void InitializeWindow() {
     window.device_context = GetDC(window.hwnd);
     window.context = CreateCompatibleDC(window.device_context);
 
-    // Create compatible bitmap for double buffering
     HBITMAP hBitmap = CreateCompatibleBitmap(window.device_context, window.w, window.h);
     SelectObject(window.context, hBitmap);
 }
 
 void Cleanup() {
-    // Clean up resources
+
     if (man.hbmp) DeleteObject(man.hbmp);
     if (enemy.hbmp) DeleteObject(enemy.hbmp);
     if (hBack) DeleteObject(hBack);
@@ -313,25 +307,22 @@ int APIENTRY wWinMain(_In_ HINSTANCE hinstance,
             DispatchMessage(&msg);
         }
         else {
-            // Process input
+
             ProcessInput();
 
             if (game.active) {
-                // Update game state
+
                 Limit();
                 LimitPlat();
                 Gravity();
                 Fight();
 
-                // Increase score over time
                 game.score++;
             }
 
-            // Render
             ShowManAndEnemy();
             ShowScore();
 
-            // Display game over message if not active
             if (!game.active) {
                 SetTextColor(window.context, RGB(255, 0, 0));
                 SetBkMode(window.context, TRANSPARENT);
@@ -345,14 +336,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hinstance,
                 DeleteObject(hFont);
             }
 
-            // Double buffering
             BitBlt(window.device_context, 0, 0, window.w, window.h, window.context, 0, 0, SRCCOPY);
 
-            Sleep(16); // ~60 FPS
+            Sleep(16);
         }
     }
 
-    // Clean up before exit
     Cleanup();
     GdiplusShutdown(gdiplusToken);
 
