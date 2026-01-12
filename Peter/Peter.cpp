@@ -1,4 +1,4 @@
-﻿// Peter.cpp : Defines the entry point for the application.
+// Peter.cpp : Defines the entry point for the application.
 //
 
 #include <windows.h>
@@ -40,9 +40,9 @@ HBITMAP hBack;
 
 void Ingame() {
     // Load bitmaps with error checking
-    man.hbmp = (HBITMAP)LoadImageA(NULL, "чикен.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-    enemy.hbmp = (HBITMAP)LoadImageA(NULL, "зомби.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-    plat.hbmp = (HBITMAP)LoadImageA(NULL, "облако.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    man.hbmp = (HBITMAP)LoadImageA(NULL, "?????.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    enemy.hbmp = (HBITMAP)LoadImageA(NULL, "?????.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    plat.hbmp = (HBITMAP)LoadImageA(NULL, "??????.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
     hBack = (HBITMAP)LoadImageA(NULL, "Home.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
     // Check if bitmaps loaded successfully
@@ -202,22 +202,27 @@ void LimitPlat() {
 
 void Gravity() {
 
-    
     float gravity = 20;
     float a = 0.1;
-    float range = man.y + man.h;
-    float prod = -200;
-    while (range < window.h) {
-        gravity += a;
-        man.y += gravity;
+    float range = man.y + man.h - window.h;
+    float pred = -200;
+    if (GetAsyncKeyState(VK_SPACE)){
+        while ( pred >= 0) {
+            gravity -= a;
+            man.y -= gravity;
+            pred++;
+        }
     }
-    while (GetAsyncKeyState(VK_SPACE) || gravity > 0) {
-        gravity -= a;
-        man.y -= gravity;
+    else if (!GetAsyncKeyState(VK_SPACE)) {
+        while (range <= 0) {
+            gravity += a;
+            man.y += gravity;
+        }
     }
 }
 
 void Fight() {
+
     float dx = man.x - enemy.x;
     float dy = man.y - enemy.y;
     float distance = sqrt(dx * dx + dy * dy);
