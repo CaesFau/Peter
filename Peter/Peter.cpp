@@ -17,13 +17,16 @@ using namespace std;
 using namespace Gdiplus;
 
 typedef struct {
-    float x, y, speed, w, h, rad, dx, dy, jspeed;
+    float x, y, speed, w, h, rad, dx, dy, jf, g;
+    bool ongr, mj, Mj;
     HBITMAP hbmp;
 } sprite;
 
 sprite man;
 sprite enemy;
 sprite plat;
+
+
 
 struct {
     int score;
@@ -51,6 +54,10 @@ void Ingame() {
     man.w = 150;  
     man.h = 125;
     man.speed = 10;
+    man.jf = 55;
+    man.g = 20;
+    man.mj = 0;
+    man.Mj = 5;
     man.x = window.w / 10;
     man.y = window.h / 2;
 
@@ -192,17 +199,24 @@ void LimitPlat() {
 
 void Gravity() {
 
-    float g = 0;
-    float a = 1;
-    if (man.y + man.h == window.h) {
-        g += a;
-        man.y = g;
-        if (g <= 100) {
-            g -= a;
-            man.y = g;
-        }
+    if (man.y + man.h == window.h) return;
+
+    if (!man.ongr) {
+        man.dy += man.g;
+        man.y = man.dy;
     }
 
+}
+
+void Jump() {
+
+    bool cj = (man.ongr || man.mj < man.Mj);
+
+    if (cj) {
+        man.dy = -man.jf;
+        man.ongr = false;
+        man.mj++;
+    }
 }
 
 void Fight() {
@@ -315,6 +329,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hinstance,
                 Limit();
                 LimitPlat();
                 Gravity();
+                Jump();
                 Fight();
 
                 game.score++;
