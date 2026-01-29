@@ -18,15 +18,16 @@ using namespace Gdiplus;
 
 typedef struct {
     float x, y, speed, w, h, rad, dx, dy, jf, g;
-    bool ongr, mj, Mj;
+    bool ongr, mj, Mj, hp; bool take, coll;
     HBITMAP hbmp;
 } sprite;
 
+const int l = 3;
 sprite man;
 sprite enemy;
 sprite plat;
-
-
+sprite hill;
+sprite hp[l];
 
 struct {
     int score;
@@ -41,10 +42,18 @@ struct {
 
 HBITMAP hBack;
 
+POINT p;
+void MouseInit() {
+
+    GetCursorPos(&p);
+    ScreenToClient(window.hwnd, &p);
+   
+}
 void Ingame() {
     man.hbmp = (HBITMAP)LoadImageA(NULL, "chiken.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
     enemy.hbmp = (HBITMAP)LoadImageA(NULL, "zombi.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
     plat.hbmp = (HBITMAP)LoadImageA(NULL, "cloud.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    hill.hbmp = (HBITMAP)LoadImageA(NULL, "snus.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
     hBack = (HBITMAP)LoadImageA(NULL, "Home.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
     if (!man.hbmp || !enemy.hbmp || !hBack) {
@@ -71,6 +80,22 @@ void Ingame() {
     plat.h = 200;
     plat.x = window.w / 2 - plat.w / 2;
     plat.y = window.h / 2 - plat.h / 2;
+
+    hill.w = 200;
+    hill.h = 200;
+    hill.x = window.w/2;
+    hill.y = 0;
+
+    for (int i = 0; i < l; i++) {
+        hp[i].w = 450 / l;
+        hp[i].h = 150;
+        hp[i].x += (hp[i].w+20)* i;
+        hp[i].y = 100;
+        hp[i].hbmp = (HBITMAP)LoadImageA(NULL, "hp.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+        ShowBMP(window.context, hp[i].x, hp[i].y, hp[i].w, hp[i].h, hp[i].hbmp, true);
+    }
+
+    
 
     game.score = 0;
     game.active = true;
@@ -99,13 +124,23 @@ void ShowScore() {
 }
 
 void ProcessInput() {
-    if (GetAsyncKeyState('W')) man.y -= man.speed;
-    if (GetAsyncKeyState('S')) man.y += man.speed;
     if (GetAsyncKeyState('A')) man.x -= man.speed;
     if (GetAsyncKeyState('D')) man.x += man.speed;
+    if (GetAsyncKeyState(VK_SPACE)&& man.ongr) {
+      
+        man.dy -= 40;
+        man.ongr = false;
+      
+    }
 
-    if (!game.active && (GetAsyncKeyState(VK_SPACE) & 0x8000)) {
-        Ingame();
+    if(GetAsyncKeyState(VK_LBUTTON) && p.x >= enemy.x && p.x <= enemy.x + enemy.w &&
+        p.y >= enemy.y && p.y <= enemy.y + enemy.h) {
+        enemy.x = p.x - enemy.w / 2;
+        enemy.y = p.y - enemy.h / 2;
+    }
+
+    if (!game.active && (GetAsyncKeyState(VK_SPACE))) {
+        //Ingame();
     }
 }
 
@@ -140,6 +175,8 @@ void ShowManAndEnemy() {
 
     ShowBMP(window.context, man.x , man.y , man.w, man.h, man.hbmp, true);
 
+    ShowBMP(window.context, hill.x, hill.y, hill.w, hill.h, hill.hbmp, true);
+
     float dx = man.x - enemy.x;
     float dy = man.y - enemy.y;
     float distance = sqrt(dx * dx + dy * dy);
@@ -148,8 +185,9 @@ void ShowManAndEnemy() {
         enemy.x += (dx / distance) * enemy.speed;
         enemy.y += (dy / distance) * enemy.speed;
     }
-
+   
     ShowBMP(window.context, enemy.x , enemy.y , enemy.w, enemy.h, enemy.hbmp, true);
+    
 }
 
 void Limit() {
@@ -189,34 +227,39 @@ void LimitPlat() {
             man.x = plat.x + plat.w;
         }
         else if (itog == y1) {
-            man.y = plat.y - man.h;
+            if (man.y >= plat.y - man.h && man.x >= plat.x - man.w && man.x <= plat.x + plat.w) {
+                man.y = plat.y - man.h;
+                man.dy = 0;
+                man.ongr = true;
+                if (GetAsyncKeyState(VK_SPACE)) {
+                    man.dy -= 20;
+                    man.y += man.dy;
+                    man.ongr = false;
+                }
+            }
+
         }
         else if (itog == y2) {
             man.y = plat.y + plat.h;
         }
+        man.ongr = false;
     }
 }
 
 void Gravity() {
 
-    if (man.y + man.h == window.h) return;
-
     if (!man.ongr) {
-        man.dy += man.g;
-        man.y = man.dy;
+        man.dy += 0.9;
+        man.y += man.dy;
+        
     }
 
-}
-
-void Jump() {
-
-    bool cj = (man.ongr || man.mj < man.Mj);
-
-    if (cj) {
-        man.dy = -man.jf;
-        man.ongr = false;
-        man.mj++;
+    if (man.y >= window.h - man.h){
+        man.y = window.h - man.h;
+        man.dy = 0;
+        man.ongr = true;
     }
+   
 }
 
 void Fight() {
@@ -309,7 +352,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hinstance,
     Ingame();
 
 
-    ShowCursor(false);
+    ShowCursor(true);
 
     MSG msg = { 0 };
     while (true) {
@@ -329,8 +372,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hinstance,
                 Limit();
                 LimitPlat();
                 Gravity();
-                Jump();
                 Fight();
+                MouseInit();
 
                 game.score++;
             }
