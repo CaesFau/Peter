@@ -140,7 +140,7 @@ void ProcessInput() {
     }
 
     if (!game.active && (GetAsyncKeyState(VK_SPACE))) {
-        //Ingame();
+        Ingame();
     }
 }
 
