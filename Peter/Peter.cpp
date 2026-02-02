@@ -18,11 +18,13 @@ using namespace Gdiplus;
 
 typedef struct {
     float x, y, speed, w, h, rad, dx, dy, jf, g;
-    bool ongr, mj, Mj, hp; bool take, coll;
+    bool ongr, mj, Mj, hp; bool take; bool actual; bool cum;
     HBITMAP hbmp;
 } sprite;
 
 const int l = 3;
+int r ;
+
 sprite man;
 sprite enemy;
 sprite plat;
@@ -83,16 +85,19 @@ void Ingame() {
 
     hill.w = 200;
     hill.h = 200;
-    hill.x = window.w/2;
-    hill.y = 0;
+    hill.x = window.w/2 - hill.w /2;
+    hill.y = plat.y - hill.h;
+    hill.take = false;
+    hill.cum = true;
 
     for (int i = 0; i < l; i++) {
+        r += l;
         hp[i].w = 450 / l;
         hp[i].h = 150;
-        hp[i].x += (hp[i].w+20)* i;
+        hp[i].x += (hp[i].w+20)* i; 
         hp[i].y = 100;
+        hp[i].actual = true;
         hp[i].hbmp = (HBITMAP)LoadImageA(NULL, "hp.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-        ShowBMP(window.context, hp[i].x, hp[i].y, hp[i].w, hp[i].h, hp[i].hbmp, true);
     }
 
     
@@ -138,10 +143,6 @@ void ProcessInput() {
         enemy.x = p.x - enemy.w / 2;
         enemy.y = p.y - enemy.h / 2;
     }
-
-    if (!game.active && (GetAsyncKeyState(VK_SPACE))) {
-        Ingame();
-    }
 }
 
 void ShowBMP(HDC hdc, int x, int y, int x1, int y1, HBITMAP hbmp, bool alpha = false) {
@@ -176,6 +177,12 @@ void ShowManAndEnemy() {
     ShowBMP(window.context, man.x , man.y , man.w, man.h, man.hbmp, true);
 
     ShowBMP(window.context, hill.x, hill.y, hill.w, hill.h, hill.hbmp, true);
+
+    for (int i = 0; i < r; i++) {
+        if (hp[i].actual) {
+            ShowBMP(window.context, hp[i].x, hp[i].y, hp[i].w, hp[i].h, hp[i].hbmp, true);
+        }
+    }
 
     float dx = man.x - enemy.x;
     float dy = man.y - enemy.y;
@@ -246,6 +253,19 @@ void LimitPlat() {
     }
 }
 
+void TakeHill() {
+    if (man.x >= hill.x - man.w &&
+        man.y >= hill.y &&
+        man.y <= hill.y + hill.h &&
+        man.x <= hill.x + hill.w &&
+        !hill.take) {
+        hill.w = 0;
+        hill.h = 0;
+        hill.take = true;
+        
+    }
+}
+
 void Gravity() {
 
     if (!man.ongr) {
@@ -264,16 +284,28 @@ void Gravity() {
 
 void Fight() {
 
-    float dx = man.x - enemy.x;
-    float dy = man.y - enemy.y;
-    float distance = sqrt(dx * dx + dy * dy);
+    
+}
 
-    float collisionRadius = (man.w + enemy.w) / 6;
+void MamaPapa() {
 
-    if (distance < collisionRadius) {
-        game.active = false;
-        game.score = 0;
+    if (man.x >= enemy.x - man.w &&
+        man.x <= enemy.x + enemy.w &&
+        man.y >= enemy.y - man.h &&
+        man.y <= enemy.y + enemy.h) {
+        man.x = 0;
+        man.y = window.h;
+        r--;
     }
+}
+        
+
+void DwaPapy() {
+
+    if (r == 0) {
+        game.active = false;
+    }
+
 }
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -371,11 +403,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hinstance,
 
                 Limit();
                 LimitPlat();
+                TakeHill();
                 Gravity();
                 Fight();
                 MouseInit();
+                MamaPapa();
+                DwaPapy();
 
-                game.score++;
             }
 
             ShowManAndEnemy();
@@ -388,7 +422,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hinstance,
                 HFONT hFont = CreateFont(60, 0, 0, 0, FW_BOLD, 0, 0, 0, 0, 0, 0, 2, 0, L"Arial");
                 HFONT hOldFont = (HFONT)SelectObject(window.context, hFont);
 
-                TextOutA(window.context, window.w / 2 - 150, window.h / 2 - 30, "GAME OVER - PRESS SPACE", 23);
+                TextOutA(window.context, window.w / 2 - 155, window.h / 2, "GAME OVER", 23);
 
                 SelectObject(window.context, hOldFont);
                 DeleteObject(hFont);
